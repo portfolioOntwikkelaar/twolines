@@ -1,76 +1,75 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const header = document.querySelector('header');
-    const backgrounds = ['#AF0288', '#E75454', '#7276CC', '#7276CC'];
-    const largeNums = [39, 35, 40, 150];
-    const smallNums = [12, 7, 5, 9];
+const canvas = document.getElementById('motionField');
+const ctx = canvas.getContext('2d');
 
-    const coordinates = {
-        x: undefined,
-        y: undefined
-    }
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-    const generateNumber = () => {
-        return Math.floor(Math.random() * 5);
-    }
+let lines = [];
+const colors = ['#e38cff', '#ffbdf4', '#69d2ff', '#00ffcc'];
+const maxLines = 100;
 
-    const createRandomNumbers = () => {
-        const width = generateNumber();
-        const height = generateNumber();
-        const color = generateNumber();
-        return [width, height, color];
-    }
+// Creëer bewegende lijnstructuren
+class Line {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.length = Math.random() * 80 + 20;
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = Math.random() * 2 + 0.5;
+    this.opacity = 1;
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+  }
 
-    const configureWideElement = (newEle) => {
-        const [width, height, color] = createRandomNumbers();
-        newEle.style.width = largeNums[width] + 'px';
-        newEle.style.height = smallNums[height] + 'px';
-        newEle.style.backgroundColor = backgrounds[color];
-        newEle.classList.add('line', 'line-wide');
+  update() {
+    this.x += Math.cos(this.angle) * this.speed;
+    this.y += Math.sin(this.angle) * this.speed;
+    this.opacity -= 0.015;
+  }
 
-    }
+  draw() {
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = this.opacity;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(this.x - Math.cos(this.angle) * this.length, this.y - Math.sin(this.angle) * this.length);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.globalAlpha = 1;
+  }
+}
 
-    const configureTallElement = (newEle) => {
-        const [width, height, color] = createRandomNumbers();
-        newEle.style.width = smallNums[width] + 'px';
-        newEle.style.height = largeNums[height] + 'px';
-        newEle.style.backgroundColor = backgrounds[color];
-        newEle.classList.add('line', 'line-high');
+// Mouse interactie
+let mouse = { x: null, y: null };
+window.addEventListener('mousemove', e => {
+  mouse.x = e.x;
+  mouse.y = e.y;
+  for (let i = 0; i < 4; i++) {
+    lines.push(new Line(mouse.x, mouse.y));
+  }
+});
 
-    }
+function animate() {
+  ctx.fillStyle = 'rgba(16, 8, 31, 0.15)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const addElement = () => {
-        const newEle = document.createElement('div');
-        const typeNum = Math.round(Math.random()); //returns 0 or 1;
+  lines.forEach((line, i) => {
+    line.update();
+    line.draw();
+    if (line.opacity <= 0) lines.splice(i, 1);
+  });
 
-        if(typeNum === 0) {
-            configureWideElement(newEle);
-        } else {
-            configureTallElement(newEle);
-        }
+  // Zachte kleurverschuiving in de achtergrond
+  document.body.style.background = `radial-gradient(circle at ${50 + Math.sin(Date.now() * 0.0005) * 10}% 30%, var(--bg2), var(--bg1))`;
 
-        console.log(newEle);
+  requestAnimationFrame(animate);
+}
 
-        newEle.style.left = coordinates.x + 'px';
-        newEle.style.top = coordinates.y + 'px';
-        header.appendChild(newEle);
+animate();
 
-    }
-
-    const updateCoordinates = e => {
-        if(coordinates.x === undefined || coordinates.y === undefined){
-            coordinates.x = e.x;
-            coordinates.y = e.y;
-            addElement();
-        }
-
-        if(Math.abs(coordinates.x - e.x) > 50 || Math.abs(coordinates.y - e.y) > 50) {
-            coordinates.x = e.x;
-            coordinates.y = e.y;
-            addElement();
-        }
-    }
-
-    header.addEventListener('mousemove', e => {
-        updateCoordinates(e);
-    });
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 });
